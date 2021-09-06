@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 import os, sys
 import requests
-import config
 import json
 import hmac
 import hashlib
@@ -11,6 +10,7 @@ from tenacity import *
 from tenacity.wait import wait_fixed
 from bfxapi.logic import telegramTraderBot
 from bfxapi.logic.telegramTraderBot import TelegramBot
+sys.path.append('../../')
 
 import numpy as np
 import pandas as pd
@@ -140,12 +140,8 @@ class TraderLogic:
         self.buyEnabled = True
         self.backtest = False
         self.loggingOn = True
-        try:
-            with open('bfxapi/logic/config.json', 'r') as f:
-                self.config = json.load(f)
-        except:
-            with open('../../../bfxapi/logic/config.json', 'r') as f:
-                self.config = json.load(f)
+        with open('bfxapi/config/config.json', 'r') as f:
+            self.config = json.load(f)
 
     def sma(self, data, smaPeriod):
         j = next(i for i, x in enumerate(data) if x is not None)
@@ -785,7 +781,7 @@ class TraderLogic:
                     print('\n\n' + msg)
                     print("available balance = ", balance)
                     print("utc ", datetime.utcfromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), "  buy at ", open_data[len(open_data)-1], " ash high would be: ", high_data[len(high_data)-1], " ash low would be: ", low_data[len(low_data)-1])
-                    # self.executeBuy(balance, symbol)
+                    self.executeBuy(balance, symbol)
                     print("")
                 elif self.backtest:
                     backtester.simulate_buy(backtester.calcMaxAmount(open_data[len(open_data)-1]), open_data[len(open_data)-1])
@@ -814,7 +810,7 @@ class TraderLogic:
                         print('\n\n' + msg)
                         print("amount available to sell = ", amount)
                         print("utc ", datetime.utcfromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), "  sell at ", open_data[len(open_data)-1], " ash high would be: ", high_data[len(high_data)-1], " ash low would be: ", low_data[len(low_data)-1])
-                        # self.executeSell(amount, symbol)
+                        self.executeSell(amount, symbol)
                         print("")
                     else:
                         self.telegramBot.sendInfo("Sell signal ("+ msg +") but not enought available amount! Got " + str(amount) + " but -0.00001 is required.")
@@ -1189,8 +1185,6 @@ class Backtester:
         return dates, open_data, close_data, high_data, low_data, volume_data, df
 
     def writeStatistics(self, balance_combined, open_data, dates, start):
-        f = open("maxBalanceNormal.txt", "w")
-        f.write(str(balance_combined[0][len(balance_combined[0])-1]) + "\n")
         print("")
         print("")
         print("")

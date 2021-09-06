@@ -2,7 +2,7 @@
     "GENERAL": {
         "STOPLOSS": 0.042,
         "SYMBOL": "ETHUSD",
-        "VERSION": 2.0,
+        "VERSION": 2.1,
         "TIMEFRAME": "3h",
         "ACTIVE_STRATEGY": "TREND;MOMENTUM"
     },

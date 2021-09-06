@@ -1,25 +1,26 @@
-import os
 from re import S
 import sys
 import asyncio
 import json
 import pickle
 import time
-import configparser
 from datetime import datetime
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 sys.path.append('/Users/jan/Documents/Coding/GitHub/bfx-trader/')
-sys.path.append('../../../')
+sys.path.append('/home/pi/Desktop')
+sys.path.append('bfxapi/logic')
 from bfxapi import Client
 from bfxapi.logic.client import TraderLogic, Backtester
 from bfxapi.logic.telegramTraderBot import TelegramBot
-
+import configparser
 import numpy as np
 import pandas as pd
+sys.path.append('../../')
 
 credentials = configparser.ConfigParser()
 credentials.read('bfxapi/config/credentials.ini')
+
 API_KEY = credentials['TRADER']['API_KEY']
 API_SECRET = credentials['TRADER']['API_SECRET']
 
@@ -28,12 +29,8 @@ trader = TraderLogic(API_KEY, API_SECRET, telegramBot)
 backtester = Backtester(API_KEY, API_SECRET, telegramBot)
 telegramBot.trader = trader
 
-try:
-    with open('bfxapi/logic/config.json', 'r') as f:
-        config = json.load(f)
-except:
-    with open('../../../bfxapi/logic/config.json', 'r') as f:
-        config = json.load(f)
+with open('bfxapi/config/config.json', 'r') as f:
+  config = json.load(f)
 
 trader.symbol = config['GENERAL']['SYMBOL']
 trader.timeframe = config['GENERAL']['TIMEFRAME']
