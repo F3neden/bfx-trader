@@ -115,15 +115,13 @@ class TelegramBot:
         
     def enableBuy(self, update, context):
         print("Enabling buy initiated from Telegram!")
-        f = open("buyEnabled.txt", "w")
-        f.write("True")
-        f.close()
+        self.trader.helper.writeToRuntimeConfig("buyEnabled", 'True')
+        context.bot.send_message(chat_id=self.chatId, text="buyEnabled: " + str(self.trader.helper.readFromRuntimeConfig("buyEnabled")))
 
     def disableBuy(self, update, context):
         print("Disabling buy initiated from Telegram!")
-        f = open("buyEnabled.txt", "w")
-        f.write("False")
-        f.close()
+        self.trader.helper.writeToRuntimeConfig("buyEnabled", 'False')
+        context.bot.send_message(chat_id=self.chatId, text="buyEnabled: " + str(self.trader.helper.readFromRuntimeConfig("buyEnabled")))
 
     def balance(self, update, context):
         balance = self.trader.calcBalance(self.symbol, 1)[0]

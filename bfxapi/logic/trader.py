@@ -216,21 +216,13 @@ def log_candle(candle):
           ash3h.drop(index = ash3h.index[0], inplace=True)
 
         #check if last buy price has to be set 
-        f = open("writeLastBuyPrice.txt", "r")
-        text = f.read()
-        f.close()
-
-        if text == 'True':
+        if trader.helper.readFromRuntimeConfig("writelastbuyprice") == 'True':
           #set last buy price
           print("write last buy price's low to file: ", candles3h['Low'][len(candles3h['Low'])-2])
-          f = open("lastBuyPrice.txt", "w")
-          f.write(str(candles3h['Low'][len(candles3h['Low'])-2]))
-          f.close()
+          trader.helper.writeToRuntimeConfig("lastBuyPrice", str(candles3h['Low'][len(candles3h['Low'])-2]))
 
           #set boolean to false
-          f = open("writeLastBuyPrice.txt", "w")
-          f.write("False")
-          f.close()
+          trader.helper.writeToRuntimeConfig("writeLastBuyPrice", 'False')
 
         #excecute trader 
         trader.buyOrSellCOMBLong(candles3h, ash3h, backtester)

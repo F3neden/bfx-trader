@@ -2,17 +2,22 @@
     "GENERAL": {
         "STOPLOSS": 0.042,
         "SYMBOL": "ETHUSD",
-        "VERSION": 2.1,
+        "VERSION": 2.2,
         "TIMEFRAME": "3h",
         "ACTIVE_STRATEGY": "TREND;MOMENTUM"
+    },
+    "CHANGES": {
+        "2.2": "added runtimeConfig + fixed restart from telegram + enhanced enableBuy and Sell + for momentum barsDelay death signal: added barssince method similar to pine\n",
+        "2.1": "clean up + simplified python path",
+        "2.0": "added Momentum;Trend strategy + Telegram + clean-up"
     },
     "BACKTEST": {
         "3h": {
             "STRATEGIES": {
                 "TREND;MOMENTUM": {
-                    "FROM_TO": "2020-05-01 00:00:00 TO 2021-08-23 18:00:00",
-                    "MAXBALANCE_ETHUSD": 1016.37128,
-                    "MAXBALANCE_BTCUSD": 324.38735
+                    "FROM_TO": "2020-05-01 00:00:00 TO 2021-08-26 06:00:00",
+                    "MAXBALANCE_ETHUSD": 1010.62224,
+                    "MAXBALANCE_BTCUSD": 299.77955
                 },
                 "RSI;MAV;MFI": {
                     "FROM_TO": "2020-05-01 00:00:00 TO 2021-08-23 18:00:00",
