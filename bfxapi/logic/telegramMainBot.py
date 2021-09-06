@@ -143,15 +143,23 @@ class TelegramBot:
         context.bot.send_message(chat_id=self.chatId, text=message, parse_mode=ParseMode.HTML)
 
     def setIsStopped(self, status):
-        f = open("isStopped.txt", "w")
-        f.write(str(status))
-        f.close()
+        self.writeToRuntimeConfig("isStopped", str(status))
 
     def getIsStopped(self):
-        f = open("isStopped.txt", "r")
-        text = f.read()
-        f.close()
+        text = self.readFromRuntimeConfig("isStopped")
         return text
+
+    def writeToRuntimeConfig(self, option, value, section="runtimeConfig"):
+        config = configparser.ConfigParser()
+        config.read("bfxapi/config/runtimeConfig.ini")
+        config.set(section, option, value)
+        with open("bfxapi/config/runtimeConfig.ini", 'w') as configfile:
+            config.write(configfile)
+
+    def readFromRuntimeConfig(self, option, section="runtimeConfig"):
+        config = configparser.ConfigParser()
+        config.read("bfxapi/config/runtimeConfig.ini")
+        return config[section][option]
 
 print("Telegram Bot started")
 telegramMainBot = TelegramBot()
@@ -163,11 +171,9 @@ while 1:
     fp = open("shared.pkl", "rb")
     shared = pickle.load(fp)
 
-    f = open("isStopped.txt", "r")
-    text = f.read()
-    f.close()
+    text = telegramMainBot.readFromRuntimeConfig("isStopped")
 
     if shared["Date"] == previous and text == "False":
         telegramMainBot.sendMsg("The bot did not receive any updates. I have restarted it!")
-        telegramMainBot.rebooter()
+        telegramMainBot.restarter()
     previous = shared["Date"]

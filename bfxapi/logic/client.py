@@ -10,6 +10,7 @@ from tenacity import *
 from tenacity.wait import wait_fixed
 from bfxapi.logic import telegramTraderBot
 from bfxapi.logic.telegramTraderBot import TelegramBot
+import configparser
 sys.path.append('../../')
 
 import numpy as np
@@ -129,6 +130,18 @@ class Helper:
 
     def _nonce(self):
         return str(int(round(time.time() * 1000000)))
+
+    def writeToRuntimeConfig(self, option, value, section="runtimeConfig"):
+        config = configparser.ConfigParser()
+        config.read("bfxapi/config/runtimeConfig.ini")
+        config.set(section, option, value)
+        with open("bfxapi/config/runtimeConfig.ini", 'w') as configfile:
+            config.write(configfile)
+
+    def readFromRuntimeConfig(self, option, section="runtimeConfig"):
+        config = configparser.ConfigParser()
+        config.read("bfxapi/config/runtimeConfig.ini")
+        return config[section][option]
 
 class TraderLogic:
     def __init__(self, key, secret, telegramBot):
@@ -633,6 +646,14 @@ class TraderLogic:
                 cross[1].append(list2[i])
         return cross
 
+    def barssince(self, list, event, currentPos):
+        i = currentPos
+        while i > 0:
+            if list[i] == event:
+                break
+            i -= 1
+        return currentPos-i
+
     def buyOrSellMomentum(self, close_data, dates):
         # load config   
         rsiLen = self.config['MOMENTUM'][self.timeframe][self.symbol]['LEN_RSI']
@@ -692,7 +713,7 @@ class TraderLogic:
 
         if someList[k] == "golden" and uptrend[k]:
             return "buy", dates[len(dates)-1]
-        elif (uptrend[k] and someList[k-barsDelay] == "death") or (not uptrend[k] and someList[k] == "death"):
+        elif (uptrend[k] and self.barssince(someList, "death", k) == barsDelay) or (not uptrend[k] and someList[k] == "death"):
             return "sell", dates[len(dates)-1]
         else:
             return None, dates[len(dates)-1]
@@ -730,9 +751,8 @@ class TraderLogic:
             # get last buy price
             if not self.backtest:
                 #lastBuyPrice = self.requestHistOrders('tBTCUSD')
-                f = open("lastBuyPrice.txt", "r")
-                textPrice = f.read()
-                f.close()
+                textPrice = self.helper.readFromRuntimeConfig("lastBuyPrice")
+
                 if not textPrice == '':
                     lastBuyPrice = float(textPrice)
                 else:
@@ -742,9 +762,7 @@ class TraderLogic:
                 lastBuyPrice = low_data[len(low_data)-1]
 
             if not self.backtest:
-                f = open("buyEnabled.txt", "r")
-                text = f.read()
-                f.close()
+                text = self.helper.readFromRuntimeConfig("buyEnabled")
                 if text == 'True':
                     self.buyEnabled = True
                 else:
@@ -753,9 +771,8 @@ class TraderLogic:
             # enable the possibility to buy
             if buyOrSellMAV[0] == "buy":
                 if not self.backtest:
-                    f = open("buyEnabled.txt", "w")
-                    f.write("True")
-                    f.close()
+                    self.helper.writeToRuntimeConfig("buyEnabled", 'True')
+
                     if self.buyEnabled == False:
                         self.telegramBot.sendInfo("Buying is enabled again!")
                 self.buyEnabled = True
@@ -801,9 +818,7 @@ class TraderLogic:
                     if amount < -0.00001:
                         if ((lastBuyPrice/open_data[len(open_data)-1])-1) > self.config['GENERAL']['STOPLOSS']:                          
                             #disable the possibility to buy
-                            f = open("buyEnabled.txt", "w")
-                            f.write("False")
-                            f.close()
+                            self.helper.writeToRuntimeConfig("buyEnabled", 'False')
                             self.buyEnabled = False
 
                         self.telegramBot.sendWarning(msg)
@@ -985,9 +1000,10 @@ class TraderLogic:
                     status = order_response[4][0][13]
                     print("Order : ", order_id, " with status: ", status)
 
-                    f = open("writeLastBuyPrice.txt", "w")
-                    f.write("True")
-                    f.close()
+                    self.helper.writeToRuntimeConfig("writeLastBuyPrice", 'True')
+                    # f = open("writeLastBuyPrice.txt", "w")
+                    # f.write("True")
+                    # f.close()
             except:
                 print(order_response[2])
                 self.telegramBot.sendWarning("An exception occurred while trying to buy. Trying again!\n" + str(order_response[2]))
@@ -1012,9 +1028,10 @@ class TraderLogic:
                 print("Order : ", order_id, " with status: ", status)
 
                 #reset last buy price
-                f = open("lastBuyPrice.txt", "w")
-                f.write(str(0))
-                f.close()
+                self.helper.writeToRuntimeConfig("lastBuyPrice", str(0))
+                # f = open("lastBuyPrice.txt", "w")
+                # f.write(str(0))
+                # f.close()
         except:
             print("uncaught error in try")
             print(order_response[2])
