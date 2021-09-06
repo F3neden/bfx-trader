@@ -7,8 +7,8 @@ from bfxapi import Client, Order
 
 credentials = configparser.ConfigParser()
 credentials.read('bfxapi/config/credentials.ini')
-API_KEY = credentials.UPDATE_ORDER['API_KEY']
-API_SECRET = credentials.UPDATE_ORDER['API_SECRET']
+API_KEY = credentials['TRADER']['API_KEY']
+API_SECRET = credentials['TRADER']['API_SECRET']
 
 bfx = Client(
   API_KEY=API_KEY,
