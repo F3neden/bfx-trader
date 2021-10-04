@@ -162,6 +162,14 @@ class GenericWebsocket:
                 python = sys.executable
                 os.execl(python, python, * sys.argv)
 
+            except Exception as e:
+                self.logger.error("fallback error handler")
+                self.logger.error(str(e))
+                self.logger.error("restarting application")
+                await asyncio.sleep(5)
+                python = sys.executable
+                os.execl(python, python, * sys.argv)
+
         self.logger.info("Unable to reconnect. Restarting program!")
         self.logger.info(datetime.now(pytz.timezone('Europe/Berlin')).strftime('%Y-%m-%d %H:%M:%S') + "   Reconnect attempt {}/{}".format(retries, self.max_retries))
         python = sys.executable
@@ -213,7 +221,7 @@ class GenericWebsocket:
         """
         This is used by the HF data server.
         """
-        self.stop()
+        await self.stop()
 
     async def on_open(self):
         """

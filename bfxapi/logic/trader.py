@@ -81,8 +81,9 @@ bfx = Client(
 
 #   from_to = str(config['BACKTEST'][trader.timeframe]['STRATEGIES'][strategy]['FROM_TO']).split(' TO ')
 #   override = {"start": "", "end": ""}
-#   # override["start"] = "2020-05-01 00:00:00"
+#   override["start"] = "2019-01-01 00:00:00"
 #   # override["end"] = "2021-08-23 00:00:00"
+#   override["end"] = "max"
 
 #   if override["start"] == "":
 #     startDate = dates.index(from_to[0])
@@ -91,6 +92,8 @@ bfx = Client(
 
 #   if override["end"] == "":
 #     endDate = dates.index(from_to[1])
+#   elif override["end"] == "max":
+#     endDate = len(dates)-1
 #   else:
 #     endDate = dates.index(override["end"])
 
