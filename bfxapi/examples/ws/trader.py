@@ -1,102 +1,177 @@
 import os
+from re import S
 import sys
 import asyncio
+import json
+import pickle
 import time
 import configparser
 from datetime import datetime
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-sys.path.append('/Users/jan/Documents/Coding/bitfinex-api-py/')
+sys.path.append('/Users/jan/Documents/Coding/GitHub/bfx-trader/')
 sys.path.append('../../../')
 from bfxapi import Client
-import bfxapi.logic.client  
-from bfxapi.logic.client import Trader, Backtester
+from bfxapi.logic.client import TraderLogic, Backtester
+from bfxapi.logic.telegramTraderBot import TelegramBot
+
+import numpy as np
+import pandas as pd
 
 credentials = configparser.ConfigParser()
 credentials.read('bfxapi/config/credentials.ini')
-API_KEY = credentials.TRADER['API_KEY']
-API_SECRET = credentials.TRADER['API_SECRET']
+API_KEY = credentials['TRADER']['API_KEY']
+API_SECRET = credentials['TRADER']['API_SECRET']
 
-trader = Trader(API_KEY, API_SECRET)
+telegramBot = TelegramBot()
+trader = TraderLogic(API_KEY, API_SECRET, telegramBot)
+backtester = Backtester(API_KEY, API_SECRET, telegramBot)
+telegramBot.trader = trader
 
+try:
+    with open('bfxapi/logic/config.json', 'r') as f:
+        config = json.load(f)
+except:
+    with open('../../../bfxapi/logic/config.json', 'r') as f:
+        config = json.load(f)
+
+trader.symbol = config['GENERAL']['SYMBOL']
+trader.timeframe = config['GENERAL']['TIMEFRAME']
 
 candles = []
-dates, close_data, low_data, high_data, open_data, volume_data = [], [], [], [], [], []
+dates, close_data, low_data, high_data, open_data, volume_data, ts = [], [], [], [], [], [], []
+datesLong, close_dataLong, low_dataLong, high_dataLong, open_dataLong, volume_dataLong, tsLong = [], [], [], [], [], [], []
 ash_c, ash_o, ash_h, ash_l, ash_vol, ash_d = [], [], [], [], [], []
+preDateLong, preCloseLong, preLowLong, preHighLong, preOpenLong, preVolumeLong = None, 0, 0, 0, 0, 0
+preDateShort, preCloseShort, preLowShort, preHighShort, preOpenShort, preVolumeShort = None, 0, 0, 0, 0, 0
+candles30m = pd.DataFrame(columns =['Date', 'Open', 'High', 'Low', 'Close', 'Volume']) 
+candles3h = pd.DataFrame(columns =['Date', 'Open', 'High', 'Low', 'Close', 'Volume']) 
+ash30m = pd.DataFrame(columns =['Date', 'Open', 'High', 'Low', 'Close', 'Volume']) 
+ash3h = pd.DataFrame(columns =['Date', 'Open', 'High', 'Low', 'Close', 'Volume']) 
 
 counter, former_ts = 0, 0
-timestamps = []
+timestampsLong, timestampsShort = [], []
 bfx = Client(
   API_KEY = API_KEY,
   API_SECRET = API_SECRET
   # logLevel= 'DEBUG'
 )
 
-""" fig_quick = go.Figure()
+# ###### backtester ######
+# fig_quick = go.Figure()
+# symbols = ['ETHUSD', 'BTCUSD']
+# trader.backtest = True
+# trader.loggingOn = False
+# strategy = config['GENERAL']['ACTIVE_STRATEGY']
 
-# set the parameters to limit the number of bids or asks
-timeFrame_symbol = ':3h:tBTCUSD'
-parameters = {'limit': 10000, 'sort': -1}
-candles = trader.getCandles(timeFrame_symbol, parameters, '/hist')
+# for symbol in symbols:
+#   print('Symbol: ', symbol)
+#   trader.symbol = symbol
 
-for candle in candles:
-    ts = int(candle[0]) / 1000 
-    dates.append(datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'))
-    open_data.append(candle[1])
-    close_data.append(candle[2])
-    high_data.append(candle[3])
-    low_data.append(candle[4])
-    volume_data.append(candle[5])
+#   backtester = Backtester(API_KEY, API_SECRET, telegramBot)
 
-dates = list(reversed(dates))
-open_data = list(reversed(open_data))
-close_data = list(reversed(close_data))
-high_data = list(reversed(high_data))
-low_data = list(reversed(low_data))
-volume_data = list(reversed(volume_data))
+#   dates, open_data, close_data, high_data, low_data, volume_data, df = backtester.convert_scrapedCandles(startDate="2017-08-01 00:00:00", timeframe=trader.timeframe, symbol=symbol)
 
-ash_d = dates[1:]
-ash_vol = volume_data[1:]
+#   ash_c, ash_o, ash_h, ash_l, ash_d, ash_vol = [np.nan], [np.nan], [np.nan], [np.nan], [], []
+#   ash_d = dates
+#   ash_vol = volume_data
 
-for x in range(1, len(close_data)):
-    ash_c.append(0.25 * (close_data[x] + open_data[x] + close_data[x] + low_data[x]))
-    ash_o.append(0.5 * (open_data[x-1]+ close_data[x-1]))
-    ash_h.append(max(high_data[x], open_data[x], close_data[x]))
-    ash_l.append(min(low_data[x], open_data[x], close_data[x]))
+#   for x in range(1, len(close_data)):
+#       ash_c.append(0.25 * (close_data[x] + open_data[x] + close_data[x] + low_data[x]))
+#       ash_o.append(0.5 * (open_data[x-1]+ close_data[x-1]))
+#       ash_h.append(max(high_data[x], open_data[x], close_data[x]))
+#       ash_l.append(min(low_data[x], open_data[x], close_data[x]))
 
-backtester = Backtester(API_KEY, API_SECRET)
-balance = backtester.buyOrSellTest(close_data,high_data,low_data,volume_data,dates,4,86,5,95,14,3,0.042,open_data, ash_c, ash_o, ash_d)
+#   from_to = str(config['BACKTEST'][trader.timeframe]['STRATEGIES'][strategy]['FROM_TO']).split(' TO ')
+#   override = {"start": "", "end": ""}
+#   # override["start"] = "2020-05-01 00:00:00"
+#   # override["end"] = "2021-08-23 00:00:00"
 
-fig_quick.add_trace(go.Scatter(y=balance[0], x=balance[1], name='comb:rsi+mfi+ash+resistance'+str([5, 17, 9, 23, 90])+ 'close stoploss42'))
-fig_quick.show()
-sys.exit() """
+#   if override["start"] == "":
+#     startDate = dates.index(from_to[0])
+#   else: 
+#     startDate = dates.index(override["start"])
+
+#   if override["end"] == "":
+#     endDate = dates.index(from_to[1])
+#   else:
+#     endDate = dates.index(override["end"])
+
+#   lastBuyPrice = 0
+#   balance = [[],[], []]
+#   writelastBuyPrice = False
+#   buyEnabled = True
+
+#   cl = close_data
+#   hi = high_data
+#   lo = low_data
+#   vol = volume_data
+#   op = open_data
+#   d = dates
+
+#   ash_close = ash_c
+#   ash_open = ash_o
+#   ash_dates = ash_d
+
+#   balance[0].append(backtester.getAvailBalance())
+#   balance[1].append(dates[startDate])
+#   balance[2].append("INIT")
+
+#   start = 330
+#   for idx in range(startDate,endDate+1):
+#     close_data = cl[idx-start:idx+1]
+#     dates = d[idx-start:idx+1] 
+#     high_data = hi[idx-start:idx+1]
+#     low_data = lo[idx-start:idx+1]
+#     volume_data = vol[idx-start:idx+1]
+#     open_data = op[idx-start:idx+1]
+
+#     ash_c = ash_close[idx-start:idx+1]
+#     ash_o = ash_open[idx-start:idx+1]
+#     ash_d = ash_dates[idx-start:idx+1]
+
+#     #if idx would exceed list size adjust idx to last element
+#     if idx > len(close_data)-1:
+#       idx = len(close_data)-1
+
+#     candles3h = pd.DataFrame(list(zip(dates, open_data, high_data, low_data, close_data, volume_data)), 
+#                             columns =['Date', 'Open', 'High', 'Low', 'Close', 'Volume'])
+
+#     ash3h = pd.DataFrame(list(zip(ash_d, ash_o, ash_c)), 
+#                         columns =['Date', 'Open', 'Close'])
+    
+#     balance, writelastBuyPrice, lastBuyPrice, buyEnabled = trader.buyOrSellCOMBLong(candles3h, ash3h, backtester, balance, writelastBuyPrice, lastBuyPrice)
+
+#   backtester.writeStatistics(balance, op, d, d[start])
+#   fig_quick.add_trace(go.Scatter(y=balance[0], x=balance[1], name=symbol+' backtest in trader'))
+  
+#   # warning if balance does not match
+#   if override["end"] == "" and override["start"] == "" and not config['BACKTEST'][trader.timeframe]['STRATEGIES'][strategy]['MAXBALANCE_'+symbol] == balance[0][len(balance[0])-1]: print("!!!!\nBALANCE does not match\n!!!!")
+
+# fig_quick.show()
+# sys.exit()
 
 async def log_historical_candles():
-  dates, close_data, low_data, high_data, open_data, volume_data = [], [], [], [], [], []
-
-  global candles 
-  candles = await bfx.rest.get_public_candles('tBTCUSD', 0, None, tf='3h', limit='10000')
+  print("start loading hist candles")
+  global candles3h, candles30m, ash3h, ash30m
+  candles = await bfx.rest.get_public_candles('t'+trader.symbol, 0, None, tf=trader.timeframe, limit='3000')
   for candle in candles:
-    ts = int(candle[0]) / 1000 
-    dates.append(datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'))
-    open_data.append(candle[1])
-    close_data.append(candle[2])
-    high_data.append(candle[3])
-    low_data.append(candle[4])
-    volume_data.append(candle[5])
+    candles3h = candles3h.append({'Date': pd.to_datetime(int(candle[0]) / 1000, unit='s'), 'Open': candle[1], 'High': candle[3], 'Low': candle[4], 'Close': candle[2], 'Volume': candle[5]}, ignore_index=True)
+    
+    if len(candles3h) > 1:
+      ash_o = 0.5 * (candles3h['Open'][len(candles3h['Open'])-2] + candles3h['Close'][len(candles3h['Close'])-2])
+      ash_c = 0.25 * (candle[2] + candle[1] + candle[2] + candle[4])
+      ash_h = (max(candle[3], candle[1], candle[2]))
+      ash_l = (min(candle[4], candle[1], candle[2]))
+      ash_vol = candle[5]
 
-  dates = list(reversed(dates))
-  open_data = list(reversed(open_data))
-  close_data = list(reversed(close_data))
-  high_data = list(reversed(high_data))
-  low_data = list(reversed(low_data))
-  volume_data = list(reversed(volume_data))
-  candles = list(reversed(candles))
+      ash3h = ash3h.append({'Date': pd.to_datetime(int(candle[0]) / 1000, unit='s'), 'Open': ash_o, 'High': ash_h, 'Low': ash_l, 'Close': ash_c, 'Volume': ash_vol}, ignore_index=True)
 
-  print (candles[len(candles)-1])
+  candles3h = candles3h[::-1].reset_index(drop = True)
+  print("finished loading hist candles")
 
 async def run():
-    await log_historical_candles()
+  await log_historical_candles()
 
 @bfx.ws.on('error')
 def log_error(err):
@@ -104,108 +179,167 @@ def log_error(err):
 
 @bfx.ws.on('new_candle')
 def log_candle(candle):
-  global preDate, preClose, preLow, preHigh, preOpen, preVolume
+  global preDateLong, preCloseLong, preLowLong, preHighLong, preOpenLong, preVolumeLong
+  global preDateShort, preCloseShort, preLowShort, preHighShort, preOpenShort, preVolumeShort
+  global candles3h, candles30m, ash3h, ash30m
   date = 0
-  newCandle = False
 
+  shared = {"Date":str(datetime.now())}
+  fp = open("shared.pkl","wb")
+  pickle.dump(shared, fp)
   # print(candle["tf"], " ", candle["mts"], "  -   ", datetime.utcfromtimestamp(int(candle["mts"]) / 1000).strftime('%Y-%m-%d %H:%M:%S'))
 
-  ts = int(candle["mts"]) / 1000
-  date = datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+  if candle['tf'] == trader.timeframe:
+    ts = int(candle["mts"]) / 1000
+    date = datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 
-  if len(timestamps) <= 1:
-    timestamps.append(ts)
+    if len(timestampsLong) <= 1:
+      timestampsLong.append(ts)
 
-  # write last 4 timestamps into array and look if the new ts is already in there
-  if not ts in timestamps:
-      timestamps.append(ts)
-      if (len(timestamps) >= 4):
-        del timestamps[0]
-      dates.append(date)
-      open_data.append(candle['open'])
-      close_data.append(candle['close'])
-      high_data.append(candle['high'])
-      low_data.append(candle['low'])
-      volume_data.append(candle['volume'])
+    # write last 4 timestampsLong into array and look if the new ts is already in there
+    if not ts in timestampsLong:
+        timestampsLong.append(ts)
+        if (len(timestampsLong) >= 4):
+          del timestampsLong[0]
 
-      # adjust last periods data 
-      close_data[len(close_data)-2] = preClose
-      high_data[len(high_data)-2] = preHigh
-      low_data[len(low_data)-2] = preLow
-      open_data[len(low_data)-2] = preOpen
-      volume_data[len(volume_data)-2] = preVolume
+        candles3h = candles3h.append({'Date': pd.to_datetime(int(candle['mts']) / 1000, unit='s'), 'Open': candle['open'], 'High': candle['high'], 'Low': candle['low'], 'Close': candle['close'], 'Volume': candle['volume']}, ignore_index=True)
 
-      if len(dates) > 1:
-        ash_o.append(0.5 * (open_data[len(open_data)-2] + close_data[len(close_data)-2]))
-        ash_c.append(0.25 * (candle['close'] + candle['open'] + candle['close'] + candle['low']))
-        ash_h.append(max(candle['high'], candle['open'], candle['close']))
-        ash_l.append(min(candle['low'], candle['open'], candle['close']))
-        ash_vol.append(candle['volume'])
-        ash_d.append(date)
+        # adjust last periods data
+        candles3h.loc[len(candles3h['Close'])-2,['Close','High','Low','Open','Volume']] = [preCloseLong, preHighLong, preLowLong, preOpenLong, preVolumeLong]
+        candles3h.drop(index = candles3h.index[0], inplace=True)
 
-        ash_o.pop(0)
-        ash_c.pop(0)
-        ash_l.pop(0)
-        ash_h.pop(0)
-        ash_vol.pop(0)
-        ash_d.pop(0)
+        if len(candles3h) > 1:
+          ash_o = 0.5 * (candles3h['Open'][len(candles3h['Open'])-2] + candles3h['Close'][len(candles3h['Close'])-2])
+          ash_c = 0.25 * (candle['close'] + candle['open'] + candle['close'] + candle['low'])
+          ash_h = (max(candle['high'], candle['open'], candle['close']))
+          ash_l = (min(candle['low'], candle['open'], candle['close']))
+          ash_vol = candle['volume']
 
-      dates.pop(0)
-      open_data.pop(0)
-      close_data.pop(0)
-      high_data.pop(0)
-      low_data.pop(0)
-      volume_data.pop(0)
+          ash3h = ash3h.append({'Date': pd.to_datetime(int(candle['mts']) / 1000, unit='s'), 'Open': ash_o, 'High': ash_h, 'Low': ash_l, 'Close': ash_c, 'Volume': ash_vol}, ignore_index=True)
+          ash3h.drop(index = ash3h.index[0], inplace=True)
 
-      #check if last buy price has to be set 
-      f = open("writeLastBuyPrice.txt", "r")
-      text = f.read()
-      f.close()
-      if text == 'True':
-
-        #set last buy price
-        print("write last buy price's low to file: ", low_data[len(low_data)-2])
-        f = open("lastBuyPrice.txt", "w")
-        f.write(str(low_data[len(low_data)-2]))
+        #check if last buy price has to be set 
+        f = open("writeLastBuyPrice.txt", "r")
+        text = f.read()
         f.close()
 
-        #set boolean to false
-        f = open("writeLastBuyPrice.txt", "w")
-        f.write("False")
+        if text == 'True':
+          #set last buy price
+          print("write last buy price's low to file: ", candles3h['Low'][len(candles3h['Low'])-2])
+          f = open("lastBuyPrice.txt", "w")
+          f.write(str(candles3h['Low'][len(candles3h['Low'])-2]))
+          f.close()
+
+          #set boolean to false
+          f = open("writeLastBuyPrice.txt", "w")
+          f.write("False")
+          f.close()
+
+        #excecute trader 
+        trader.buyOrSellCOMBLong(candles3h, ash3h, backtester)
+    
+    preDateLong = date
+    preOpenLong = candle['open']
+    preCloseLong = candle['close']
+    preHighLong = candle['high']
+    preLowLong = candle['low']
+    preVolumeLong = candle['volume']
+
+  elif candle['tf'] == '30m':
+    ts = int(candle["mts"]) / 1000
+    date = datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+
+    if len(timestampsShort) <= 1:
+      timestampsShort.append(ts)
+
+    # write last 4 timestampsShort into array and look if the new ts is already in there
+    if not ts in timestampsShort:
+        timestampsShort.append(ts)
+        if (len(timestampsShort) >= 4):
+          del timestampsShort[0]
+
+        candles30m = candles30m.append({'Date': pd.to_datetime(int(candle['mts']) / 1000, unit='s'), 'Open': candle['open'], 'High': candle['high'], 'Low': candle['low'], 'Close': candle['close'], 'Volume': candle['volume']}, ignore_index=True)
+
+        # adjust last periods data
+        candles30m.loc[len(candles30m['Close'])-2,['Close','High','Low','Open','Volume']] = [preCloseShort, preHighShort, preLowShort, preOpenShort, preVolumeShort]
+        candles30m.drop(index = candles30m.index[0], inplace=True)
+
+        if len(candles30m) > 1:
+          ash_o = 0.5 * (candles30m['Open'][len(candles30m['Open'])-2] + candles30m['Close'][len(candles30m['Close'])-2])
+          ash_c = 0.25 * (candle['close'] + candle['open'] + candle['close'] + candle['low'])
+          ash_h = (max(candle['high'], candle['open'], candle['close']))
+          ash_l = (min(candle['low'], candle['open'], candle['close']))
+          ash_vol = candle['volume']
+
+          ash30m = ash30m.append({'Date': pd.to_datetime(int(candle['mts']) / 1000, unit='s'), 'Open': ash_o, 'High': ash_h, 'Low': ash_l, 'Close': ash_c, 'Volume': ash_vol}, ignore_index=True)
+          ash30m.drop(index = ash30m.index[0], inplace=True)
+
+        #check if last buy price has to be set 
+        f = open("writeLastBuyPriceMid.txt", "r")
+        text = f.read()
         f.close()
 
-      #excecute trader 
-      trader.buyOrSellCOMB(open_data, high_data, low_data, close_data, volume_data, dates, 4, 86, 5, 95, 14, 3, 0, 0.042, close_data, ash_c, ash_o, ash_d)
-  
-  preDate = date
-  preOpen = candle['open']
-  preClose = candle['close']
-  preHigh = candle['high']
-  preLow = candle['low']
-  preVolume = candle['volume']
+        if text == 'True':
+          #set last buy price
+          print("write last buy price's low to file: ", candles30m['Low'][len(candles30m['Low'])-2])
+          f = open("lastBuyPriceMid.txt", "w")
+          f.write(str(candles30m['Low'][len(candles30m['Low'])-2]))
+          f.close()
+
+          #set boolean to false
+          f = open("writeLastBuyPriceMid.txt", "w")
+          f.write("False")
+          f.close()
+
+        #excecute trader 
+        trader.buyOrSellCombShort(candles30m)
+
+    preDateShort = date
+    preOpenShort = candle['open']
+    preCloseShort = candle['close']
+    preHighShort = candle['high']
+    preLowShort = candle['low']
+    preVolumeShort = candle['volume']
 
 @bfx.ws.on('seed_candle')
 def seed_candle(candle):
-  global dates, close_data, low_data, high_data, open_data, volume_data
+  global candles3h, candles30m, ash3h, ash30m
+  
+  if candle['tf'] == trader.timeframe:
+    try:
+      candles3h['Date'].tolist().index(pd.to_datetime(int(candle['mts']) / 1000, unit='s'))
+    except ValueError:
+      candles3h = candles3h.append({'Date': pd.to_datetime(int(candle['mts']) / 1000, unit='s'), 'Open': candle['open'], 'High': candle['high'], 'Low': candle['low'], 'Close': candle['close'], 'Volume': candle['volume']}, ignore_index=True)
+    
+      if len(candles3h) > 1:
+        ash_o = 0.5 * (candles3h['Open'][len(candles3h['Open'])-2] + candles3h['Close'][len(candles3h['Close'])-2])
+        ash_c = 0.25 * (candle['close'] + candle['open'] + candle['close'] + candle['low'])
+        ash_h = (max(candle['high'], candle['open'], candle['close']))
+        ash_l = (min(candle['low'], candle['open'], candle['close']))
+        ash_vol = candle['volume']
 
-  ts = int(candle['mts']) / 1000 
-  dates.append(datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'))
-  open_data.append(candle['open'])
-  close_data.append(candle['close'])
-  high_data.append(candle['high'])
-  low_data.append(candle['low'])
-  volume_data.append(candle['volume'])
+        ash3h = ash3h.append({'Date': pd.to_datetime(int(candle['mts']) / 1000, unit='s'), 'Open': ash_o, 'High': ash_h, 'Low': ash_l, 'Close': ash_c, 'Volume': ash_vol}, ignore_index=True)    
+    
+  elif candle['tf'] == '30m':
+    candles30m = candles30m.append({'Date': pd.to_datetime(int(candle['mts']) / 1000, unit='s'), 'Open': candle['open'], 'High': candle['high'], 'Low': candle['low'], 'Close': candle['close'], 'Volume': candle['volume']}, ignore_index=True)
 
-  if len(dates) > 1:
-    ash_o.append(0.5 * (open_data[len(open_data)-2] + close_data[len(close_data)-2]))
-    ash_c.append(0.25 * (candle['close'] + candle['open'] + candle['close'] + candle['low']))
-    ash_h.append(max(candle['high'], candle['open'], candle['close']))
-    ash_l.append(min(candle['low'], candle['open'], candle['close']))
-    ash_vol.append(candle['volume'])
-    ash_d.append(datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'))
+    if len(candles30m) > 1:
+      ash_o = 0.5 * (candles30m['Open'][len(candles30m['Open'])-2] + candles30m['Close'][len(candles30m['Close'])-2])
+      ash_c = 0.25 * (candle['close'] + candle['open'] + candle['close'] + candle['low'])
+      ash_h = (max(candle['high'], candle['open'], candle['close']))
+      ash_l = (min(candle['low'], candle['open'], candle['close']))
+      ash_vol = candle['volume']
+
+      ash30m = ash30m.append({'Date': pd.to_datetime(int(candle['mts']) / 1000, unit='s'), 'Open': ash_o, 'High': ash_h, 'Low': ash_l, 'Close': ash_c, 'Volume': ash_vol}, ignore_index=True)
 
 async def start():
-  await bfx.ws.subscribe('candles', 'tBTCUSD', timeframe='3h')
+  await bfx.ws.subscribe('candles', 't'+trader.symbol, timeframe=trader.timeframe)
+  #await bfx.ws.subscribe('candles', 'tBTCUSD', timeframe='30m')
 
+# start loading hist candles
+t = asyncio.ensure_future(run())
+asyncio.get_event_loop().run_until_complete(t)
+
+# subscribe for new candles
 bfx.ws.on('connected', start)
 bfx.ws.run()

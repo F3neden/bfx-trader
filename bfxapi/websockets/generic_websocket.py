@@ -134,7 +134,7 @@ class GenericWebsocket:
         loop = asyncio.get_event_loop()
         while retries < self.max_retries and self.attempt_retry:
             try:
-                async with websockets.connect(self.host) as websocket:
+                async with websockets.connect(self.host, ping_interval=None) as websocket:
                     self.sockets[sId].set_websocket(websocket)
                     self.sockets[sId].set_connected()
                     self.logger.info(datetime.now(pytz.timezone('Europe/Berlin')).strftime('%Y-%m-%d %H:%M:%S') + "   Websocket connected to {}".format(self.host))
@@ -152,16 +152,20 @@ class GenericWebsocket:
                 self._emit('disconnected')
                 if (not self.attempt_retry):
                     return
-                self.logger.error(str(e))
-                retries += 1
-                # wait 5 seconds befor retrying
-                self.logger.info("Waiting 5 seconds before retrying...")
+                if not e.code == 1006:
+                    self.logger.error(str(e))
+                    retries += 1
+                    # wait 5 seconds befor retrying
+                    self.logger.info("Waiting 5 seconds before retrying...")
+                    self.logger.info(datetime.now(pytz.timezone('Europe/Berlin')).strftime('%Y-%m-%d %H:%M:%S') + "   Reconnect attempt {}/{}".format(retries, self.max_retries))
                 await asyncio.sleep(5)
-                self.logger.info(datetime.now(pytz.timezone('Europe/Berlin')).strftime('%Y-%m-%d %H:%M:%S') + "   Reconnect attempt {}/{}".format(retries, self.max_retries))
                 python = sys.executable
                 os.execl(python, python, * sys.argv)
 
-        self.logger.info("Unable to connect to websocket.")
+        self.logger.info("Unable to reconnect. Restarting program!")
+        self.logger.info(datetime.now(pytz.timezone('Europe/Berlin')).strftime('%Y-%m-%d %H:%M:%S') + "   Reconnect attempt {}/{}".format(retries, self.max_retries))
+        python = sys.executable
+        os.execl(python, python, * sys.argv)
         self._emit('stopped')
 
     async def stop(self):

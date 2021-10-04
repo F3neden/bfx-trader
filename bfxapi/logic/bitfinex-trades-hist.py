@@ -27,10 +27,11 @@ parameters = {'limit': 10000, 'sort': -1}
 # create the client
 #client = bitfinex.Client()
 test = Test()
+
 credentials = configparser.ConfigParser()
 credentials.read('bfxapi/config/credentials.ini')
-API_KEY = credentials.HIST['API_KEY']
-API_SECRET = credentials.HIST['API_SECRET']
+API_KEY = credentials['TRADER']['API_KEY']
+API_SECRET = credentials['TRADER']['API_SECRET']
 
 trader = Trader(API_KEY, API_SECRET)
 

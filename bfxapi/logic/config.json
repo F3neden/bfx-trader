@@ -1,0 +1,201 @@
+{
+    "GENERAL": {
+        "STOPLOSS": 0.042,
+        "SYMBOL": "ETHUSD",
+        "VERSION": 2.0,
+        "TIMEFRAME": "3h",
+        "ACTIVE_STRATEGY": "TREND;MOMENTUM"
+    },
+    "BACKTEST": {
+        "3h": {
+            "STRATEGIES": {
+                "TREND;MOMENTUM": {
+                    "FROM_TO": "2020-05-01 00:00:00 TO 2021-08-23 18:00:00",
+                    "MAXBALANCE_ETHUSD": 1016.37128,
+                    "MAXBALANCE_BTCUSD": 324.38735
+                },
+                "RSI;MAV;MFI": {
+                    "FROM_TO": "2020-05-01 00:00:00 TO 2021-08-23 18:00:00",
+                    "MAXBALANCE_ETHUSD": 206.64984,
+                    "MAXBALANCE_BTCUSD": 285.57242
+                }
+            }
+        },
+        "1m": {
+            "STRATEGIES": {
+                "TREND;MOMENTUM": {
+                    "FROM_TO": "2020-05-01 00:00:00 TO 2021-08-19 09:00:00",
+                    "MAXBALANCE_ETHUSD": 766.9474,
+                    "MAXBALANCE_BTCUSD": 324.38735
+                },
+                "RSI;MAV;MFI": {
+                    "FROM_TO": "2020-05-01 00:00:00 TO 2021-08-19 09:00:00",
+                    "MAXBALANCE_ETHUSD": 206.64984,
+                    "MAXBALANCE_BTCUSD": 285.57242
+                }
+            }
+        }
+    },
+    "TREND": {
+        "3h": {
+            "ETHUSD": {
+                "LOOKBACK": 90,
+                "SMOOTH": 2,
+                "ATR_LENGTH": 12,
+                "ATR_MULTIPLIER": 1.8
+            },
+            "BTCUSD": {
+                "LOOKBACK": 140,
+                "SMOOTH": 6,
+                "ATR_LENGTH": 8,
+                "ATR_MULTIPLIER": 2.5
+            }
+        },
+        "1m": {
+            "ETHUSD": {
+                "LOOKBACK": 90,
+                "SMOOTH": 2,
+                "ATR_LENGTH": 12,
+                "ATR_MULTIPLIER": 1.8
+            },
+            "BTCUSD": {
+                "LOOKBACK": 140,
+                "SMOOTH": 6,
+                "ATR_LENGTH": 8,
+                "ATR_MULTIPLIER": 2.5
+            }
+        }
+    },
+    "MOMENTUM": {
+        "3h": {
+            "ETHUSD": {
+                "LEN_RSI": 17,
+                "LEN_STOCH": 12,
+                "SMOOTH_K": 3,
+                "SMOOTH_D": 6,
+                "LIMIT_TOP": 90,
+                "LIMIT_BOTTOM": 28,
+                "TREND_EMA_SLOW": 50,
+                "TREND_EMA_FAST": 6,
+                "BARS_DELAY": 17
+            },
+            "BTCUSD": {
+                "LEN_RSI": 7,
+                "LEN_STOCH": 11,
+                "SMOOTH_K": 3,
+                "SMOOTH_D": 6,
+                "LIMIT_TOP": 90,
+                "LIMIT_BOTTOM": 28,
+                "TREND_EMA_SLOW": 53,
+                "TREND_EMA_FAST": 4,
+                "BARS_DELAY": 9
+            }
+        },
+        "1m": {
+            "ETHUSD": {
+                "LEN_RSI": 17,
+                "LEN_STOCH": 12,
+                "SMOOTH_K": 3,
+                "SMOOTH_D": 6,
+                "LIMIT_TOP": 90,
+                "LIMIT_BOTTOM": 28,
+                "TREND_EMA_SLOW": 50,
+                "TREND_EMA_FAST": 6,
+                "BARS_DELAY": 17
+            },
+            "BTCUSD": {
+                "LEN_RSI": 7,
+                "LEN_STOCH": 11,
+                "SMOOTH_K": 3,
+                "SMOOTH_D": 6,
+                "LIMIT_TOP": 90,
+                "LIMIT_BOTTOM": 28,
+                "TREND_EMA_SLOW": 53,
+                "TREND_EMA_FAST": 4,
+                "BARS_DELAY": 9
+            }
+        }
+    },
+    "RSI": {
+        "3h": {
+            "ETHUSD": {
+                "LIMIT_LOW": 5,
+                "LIMIT_HIGH": 95,
+                "LIMIT_STOP": 0,
+                "PERIOD": 14,
+                "SMOOTH": 3
+            },
+            "BTCUSD": {
+                "LIMIT_LOW": 5,
+                "LIMIT_HIGH": 95,
+                "LIMIT_STOP": 0,
+                "PERIOD": 14,
+                "SMOOTH": 3
+            }
+        },
+        "1m": {
+            "ETHUSD": {
+                "LIMIT_LOW": 5,
+                "LIMIT_HIGH": 95,
+                "LIMIT_STOP": 0,
+                "PERIOD": 14,
+                "SMOOTH": 3
+            },
+            "BTCUSD": {
+                "LIMIT_LOW": 5,
+                "LIMIT_HIGH": 95,
+                "LIMIT_STOP": 0,
+                "PERIOD": 14,
+                "SMOOTH": 3
+            }
+        }
+    },
+    "MAV": {
+        "3h": {
+            "ETHUSD": {
+                "VALUE_SHORT": 10,
+                "VALUE_LONG": 70
+            },
+            "BTCUSD": {
+                "VALUE_SHORT": 10,
+                "VALUE_LONG": 70
+            }
+        },
+        "1m": {
+            "ETHUSD": {
+                "VALUE_SHORT": 10,
+                "VALUE_LONG": 70
+            },
+            "BTCUSD": {
+                "VALUE_SHORT": 10,
+                "VALUE_LONG": 70
+            }
+        }
+    },
+    "MFI": {
+        "3h": {
+            "ETHUSD": {
+                "LIMIT_LOW": 15,
+                "LIMIT_HIGH": 85,
+                "PERIOD": 33
+            },
+            "BTCUSD": {
+                "LIMIT_LOW": 15,
+                "LIMIT_HIGH": 85,
+                "PERIOD": 33
+            }
+        },
+        "1m": {
+            "ETHUSD": {
+                "LIMIT_LOW": 15,
+                "LIMIT_HIGH": 85,
+                "PERIOD": 33
+            },
+            "BTCUSD": {
+                "LIMIT_LOW": 15,
+                "LIMIT_HIGH": 85,
+                "PERIOD": 33
+            }
+        }
+    }
+}
