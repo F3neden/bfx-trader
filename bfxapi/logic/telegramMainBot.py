@@ -1,4 +1,4 @@
-from os import readlink
+import os
 import sys
 import subprocess
 import telegram
@@ -11,6 +11,7 @@ import traceback
 import pickle
 import logging
 import configparser
+sys.path.append('../../')
 
 class TelegramBot:
     def __init__(self) -> None:
@@ -80,7 +81,7 @@ class TelegramBot:
         self.starter()
 
     def starter(self):
-        self.p = subprocess.Popen([sys.executable, 'trader.py'])
+        self.p = subprocess.Popen([sys.executable, 'bfxapi/logic/trader.py'])
         self.sendMsg("Bot started!")
         print("Bot started!")
         self.setIsStopped(False)

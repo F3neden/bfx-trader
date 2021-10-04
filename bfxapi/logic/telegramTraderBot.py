@@ -1,3 +1,4 @@
+import sys
 import telegram
 from telegram import Update, ParseMode
 from telegram.ext import CommandHandler, Updater, CallbackContext
@@ -6,6 +7,7 @@ import html
 import logging
 import json
 import configparser
+sys.path.append('../../')
 
 #for balance hist pic
 from datetime import datetime
@@ -16,7 +18,7 @@ class TelegramBot:
     def __init__(self) -> None:
         try:
             self.trader = type('class', (), {})()
-
+            
             credentials = configparser.ConfigParser()
             credentials.read('bfxapi/config/credentials.ini')
             self.token = credentials['TelegramTrader']['Token']
@@ -50,12 +52,8 @@ class TelegramBot:
 
             updater.start_polling()
 
-            try:
-                with open('bfxapi/logic/config.json', 'r') as f:
-                    config = json.load(f)
-            except:
-                with open('../../../bfxapi/logic/config.json', 'r') as f:
-                    config = json.load(f)
+            with open('bfxapi/config/config.json', 'r') as f:
+                config = json.load(f)
 
             self.symbol = 't'+config['GENERAL']['SYMBOL']
 
