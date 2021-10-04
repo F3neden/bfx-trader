@@ -711,10 +711,10 @@ class TraderLogic:
             buyOrSellMomentumOld[1].append(dates[x])
             x+=1
 
-        if someList[k] == "golden" and uptrend[k]:
-            return "buy", dates[len(dates)-1]
-        elif (uptrend[k] and self.barssince(someList, "death", k) == barsDelay) or (not uptrend[k] and someList[k] == "death"):
+        if (uptrend[k] and self.barssince(someList, "death", k) == barsDelay) or (not uptrend[k] and someList[k] == "death"):
             return "sell", dates[len(dates)-1]
+        elif someList[k] == "golden" and uptrend[k]:
+            return "buy", dates[len(dates)-1]
         else:
             return None, dates[len(dates)-1]
 
