@@ -2,11 +2,12 @@
     "GENERAL": {
         "STOPLOSS": 0.042,
         "SYMBOL": "ETHUSD",
-        "VERSION": 2.3,
+        "VERSION": 2.4,
         "TIMEFRAME": "3h",
         "ACTIVE_STRATEGY": "TREND;MOMENTUM"
     },
     "CHANGES": {
+        "2.4": "added missing symbol to buy and sell method",
         "2.3": "gave sell priority over buy at momentum + enhanced websocket error handling",
         "2.2": "added runtimeConfig + fixed restart from telegram + enhanced enableBuy and Sell + for momentum barsDelay death signal: added barssince method similar to pine",
         "2.1": "clean up + simplified python path",

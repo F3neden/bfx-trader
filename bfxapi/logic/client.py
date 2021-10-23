@@ -990,7 +990,7 @@ class TraderLogic:
                 if order_response[0] == 'error':
                     if order_response[1] == 10001:
                         print(order_response[2])
-                        TraderLogic.executeBuy(self, balance-0.1)
+                        TraderLogic.executeBuy(self, balance-0.1, symbol)
                     else:
                         print("uncaught error")
                         print(order_response[3])
@@ -1007,7 +1007,7 @@ class TraderLogic:
             except:
                 print(order_response[2])
                 self.telegramBot.sendWarning("An exception occurred while trying to buy. Trying again!\n" + str(order_response[2]))
-                TraderLogic.executeBuy(self, balance-0.1)
+                TraderLogic.executeBuy(self, balance-0.1, symbol)
 
     def executeSell(self, amount, symbol):
         price = self.getTicker(symbol)
@@ -1019,7 +1019,7 @@ class TraderLogic:
             if order_response[0] == 'error':
                 print("uncaught error")
                 print(order_response[2])
-                TraderLogic.executeSell(self, amount+0.00001)
+                TraderLogic.executeSell(self, amount+0.00001, symbol)
 
             elif order_response[6] == 'SUCCESS':
                 self.telegramBot.sendWarning("Successfully sold " + str(amount) + " at " + str(price) + "!")
@@ -1036,7 +1036,7 @@ class TraderLogic:
             print("uncaught error in try")
             print(order_response[2])
             self.telegramBot.sendWarning("An exception occurred while trying to sell. Trying again!\n" + str(order_response[2]))
-            TraderLogic.executeSell(self, amount+0.00001)
+            TraderLogic.executeSell(self, amount+0.00001, symbol)
 
     def submit_order(self, symbol, price, amount, market_type='EXCHANGE LIMIT',
                            hidden=False, price_trailing=None, price_aux_limit=None,
